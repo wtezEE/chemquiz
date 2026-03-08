@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Stoichiometry Game</title>
+
+<style>
+body{
+font-family:'Sarabun',sans-serif;
+background:#f4f7f6;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+margin:0;
+}
+
+.gamebox{
+width:450px;
+background:white;
+padding:30px;
+border-radius:15px;
+box-shadow:0 4px 20px rgba(0,0,0,0.1);
+text-align:center;
+}
+
+h1{color:#2c3e50;margin-top:0;}
+.info{color:#7f8c8d;margin-bottom:20px;font-weight:bold;}
+
+#question{
+font-size:1.2rem;
+color:#34495e;
+line-height:1.6;
+margin-bottom:25px;
+min-height:90px;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+}
+
+.answers-grid{
+display:grid;
+gap:12px;
+}
+
+button{
+padding:12px;
+font-size:16px;
+border:2px solid #ecf0f1;
+border-radius:10px;
+background:#fff;
+cursor:pointer;
+transition:0.3s;
+}
+
+button:hover:not(:disabled){
+background:#f8f9fa;
+border-color:#3498db;
+}
+
+.correct{background:#d4edda!important;border-color:#28a745!important;}
+.wrong{background:#f8d7da!important;border-color:#dc3545!important;}
+
+#result{
+margin-top:15px;
+font-weight:bold;
+min-height:24px;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="gamebox">
+<h1>🧪 ปริมาณสารสัมพันธ์</h1>
+<div class="info">ข้อที่ <span id="count">0</span>/10 | Level: <span id="level">1</span></div>
+
+<div id="question"></div>
+<div id="answers" class="answers-grid"></div>
+<div id="result"></div>
+</div>
+
+<script>
+
+const allQuestions=[
+
+{
+q:"โมล (mole) คืออะไร?",
+a:["หน่วยของมวล","หน่วยของปริมาณสาร","หน่วยของพลังงาน","หน่วยของความดัน"],
+correctAns:"หน่วยของปริมาณสาร"
+},
+
+{
+q:"1 โมล มีจำนวนอนุภาคเท่าใด?",
+a:["6.02×10²¹","6.02×10²²","6.02×10²³","6.02×10²⁴"],
+correctAns:"6.02×10²³"
+},
+
+{
+q:"ดุลสมการต่อไปนี้<br>H₂ + O₂ → H₂O",
+a:[
+"2H₂ + O₂ → 2H₂O",
+"H₂ + 2O₂ → 2H₂O",
+"2H₂ + 2O₂ → 2H₂O",
+"H₂ + O₂ → 2H₂O"
+],
+correctAns:"2H₂ + O₂ → 2H₂O"
+},
+
+{
+q:"2H₂ + O₂ → 2H₂O<br>ถ้ามี H₂ = 2 mol จะเกิด H₂O กี่ mol",
+a:["1","2","3","4"],
+correctAns:"2"
+},
+
+{
+q:"2Na + Cl₂ → 2NaCl<br>ถ้ามี Na = 2 mol จะเกิด NaCl กี่ mol",
+a:["1","2","3","4"],
+correctAns:"2"
+},
+
+{
+q:"2H₂ + O₂ → 2H₂O<br>ถ้ามี O₂ = 1 mol จะเกิด H₂O กี่ mol",
+a:["1","2","3","4"],
+correctAns:"2"
+},
+
+{
+q:"C + O₂ → CO₂<br>ถ้ามี C = 12 g (C = 12 g/mol) จะเกิด CO₂ กี่ mol",
+a:["0.5","1","2","3"],
+correctAns:"1"
+},
+
+{
+q:"N₂ + 3H₂ → 2NH₃<br>ถ้ามี N₂ = 1 mol จะเกิด NH₃ กี่ mol",
+a:["1","2","3","4"],
+correctAns:"2"
+},
+
+{
+q:"2KClO₃ → 2KCl + 3O₂<br>ถ้ามี KClO₃ = 2 mol จะเกิด O₂ กี่ mol",
+a:["1","2","3","4"],
+correctAns:"3"
+},
+
+{
+q:"CaCO₃ → CaO + CO₂<br>ถ้ามี CaCO₃ = 1 mol จะเกิด CO₂ กี่ mol",
+a:["0.5","1","2","3"],
+correctAns:"1"
+}
+
+];
+
+let questionPool=[];
+let currentQ;
+let level=1;
+let questionsDone=0;
+let score=0;
+
+function shuffleArray(array){
+for(let i=array.length-1;i>0;i--){
+let j=Math.floor(Math.random()*(i+1));
+[array[i],array[j]]=[array[j],array[i]];
+}
+return array;
+}
+
+function shufflePool(){
+questionPool=[...allQuestions];
+shuffleArray(questionPool);
+questionsDone=0;
+}
+
+function loadQuestion(){
+
+if(questionsDone>=10){
+endGame();
+return;
+}
+
+currentQ=questionPool.pop();
+questionsDone++;
+
+let randomizedAnswers=[...currentQ.a];
+shuffleArray(randomizedAnswers);
+
+document.getElementById("count").innerText=questionsDone;
+document.getElementById("question").innerHTML=currentQ.q;
+document.getElementById("result").innerText="";
+
+let ansHTML="";
+
+randomizedAnswers.forEach(ans=>{
+ansHTML+=`<button class="ans-btn" onclick="checkAnswer('${ans}',this)">${ans}</button>`;
+});
+
+document.getElementById("answers").innerHTML=ansHTML;
+
+}
+
+function checkAnswer(selected,btn){
+
+const buttons=document.querySelectorAll(".ans-btn");
+buttons.forEach(b=>b.disabled=true);
+
+if(selected===currentQ.correctAns){
+
+level++;
+score++;
+btn.classList.add("correct");
+document.getElementById("result").innerText="✅ ถูกต้อง!";
+
+}else{
+
+level=Math.max(1,level-1);
+btn.classList.add("wrong");
+
+buttons.forEach(b=>{
+if(b.innerHTML===currentQ.correctAns){
+b.classList.add("correct");
+}
+});
+
+document.getElementById("result").innerText="❌ คำตอบที่ถูกคือสีเขียว";
+}
+
+document.getElementById("level").innerText=level;
+
+setTimeout(loadQuestion,1200);
+
+}
+
+function endGame(){
+
+let rank=score>=8?"🏆 เก่งมาก!"
+:(score>=5?"🧪 ดีมาก!":"📚 ลองอีกครั้งนะ");
+
+document.getElementById("question").innerHTML=
+`<b>จบเกม!</b><br>คะแนน ${score}/10<br>${rank}`;
+
+document.getElementById("answers").innerHTML=
+`<button onclick="restart()">เล่นอีกครั้ง</button>`;
+
+}
+
+function restart(){
+level=1;
+score=0;
+document.getElementById("level").innerText=level;
+shufflePool();
+loadQuestion();
+}
+
+shufflePool();
+loadQuestion();
+
+</script>
+
+</body>
+</html>
